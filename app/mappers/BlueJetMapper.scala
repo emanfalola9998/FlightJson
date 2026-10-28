@@ -2,8 +2,8 @@ package mappers
 
 import models._
 
-import java.time.{Duration, Instant, LocalDateTime, ZoneOffset}
-import java.time.format.{DateTimeFormatter, DateTimeParseException}
+import java.time.{Duration, LocalDateTime, ZoneOffset}
+import java.time.format.{DateTimeFormatter}
 import scala.util.Try
 
 
@@ -15,7 +15,7 @@ object BlueJetMapper {
   def toOffer(flight: BlueJet): Either[String, Offer] = {
 
     for {
-      localDateTime  <- parseLocalDateTime(flight.depLocal,flight.code, formatter) // calls that can fail
+      localDateTime  <- parseLocalDateTime(flight.depLocal,flight.code) // calls that can fail
       zoneOffset     <- toZoneOffset(flight.depUtcOffset, flight.code)    //  calls that can fail
 
     } yield {
@@ -29,8 +29,8 @@ object BlueJetMapper {
 
   }
 
-  private def parseLocalDateTime(flightDepLocal: String, code: String, formatter: DateTimeFormatter): Either[String, LocalDateTime] = {
-    Try(LocalDateTime.parse(flightDepLocal, formatter)).toEither.left.map(_ => s"Error parsing to LocalDateTime for flight code: ${code},  ${flightDepLocal} ")
+  private def parseLocalDateTime(flightDepLocal: String, code: String): Either[String, LocalDateTime] = {
+    Try(LocalDateTime.parse(flightDepLocal, formatter)).toEither.left.map(_ => s"Error parsing to LocalDateTime for flight code: ${code},  ${flightDepLocal}")
     // Use try block for codes that can fail
   }
 

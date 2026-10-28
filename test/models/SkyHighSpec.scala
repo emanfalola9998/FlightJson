@@ -7,7 +7,7 @@ import play.api.libs.json.{JsError, JsPath, JsSuccess, Json}
 
 class SkyHighSpec extends AnyWordSpec with Matchers {
 
-  val skyHigh = SkyHigh(Data(List(Flight("SH176", RouteFlight("LHR", "CDG"), "2026-11-03T09:00:00.000Z", "2026-11-03T10:15:00.000Z", Price("319.94","GBP" ), 1))))
+  val skyHigh = SkyHigh(Data(List(Flight("SH176", RouteFlight("LHR", "CDG"), "2026-11-03T09:00:00.000Z", "2026-11-03T10:15:00.000Z", Price("319.94","GBP"), 1))))
 
   val skyHighJsonResponse =  """{
                |  "data": {
@@ -90,8 +90,9 @@ class SkyHighSpec extends AnyWordSpec with Matchers {
     "Return failure when the wrong type in Json is present" in {
       val convertedBrokenSkyHigh = Json.parse(wrongFieldTypeResponse).validate[SkyHigh]
 
-      convertedBrokenSkyHigh match {
+      convertedBrokenSkyHigh should matchPattern {
         case JsError(errors) if errors.exists(_._1 == JsPath \"data"\ "flights" \ 0 \ "route" \ "origin") =>
+
       }
 
 

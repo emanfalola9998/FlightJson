@@ -2,7 +2,7 @@ package mappers
 
 import models._
 
-import java.time.{Instant}
+import java.time.Instant
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -34,7 +34,7 @@ class BlueJetMapperSpec extends AnyWordSpec with Matchers {
 
       val input: BlueJet = BlueJet("ZC200", "CDG", "LHR", "03/111/2026 14:15", "+00:00", 75, 21345, "GBP", None)
 
-      BlueJetMapper.toOffer(input) shouldBe Left("Error parsing to LocalDateTime for flight code: ZC200,  03/111/2026 14:15 ")
+      BlueJetMapper.toOffer(input) shouldBe Left("Error parsing to LocalDateTime for flight code: ZC200,  03/111/2026 14:15")
     }
   }
 }

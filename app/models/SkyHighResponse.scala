@@ -3,13 +3,13 @@ package models
 import play.api.libs.json.JsonNaming.SnakeCase
 import play.api.libs.json.{Json, JsonConfiguration, OFormat}
 
-case class SkyHigh(data: Data) {
+case class SkyHighResponse(data: Data) {
 
 }
 
-object SkyHigh {
+object SkyHighResponse {
   implicit val config: JsonConfiguration = JsonConfiguration(SnakeCase)
-  implicit val formats: OFormat[SkyHigh] = Json.format[SkyHigh]
+  implicit val formats: OFormat[SkyHighResponse] = Json.format[SkyHighResponse]
 }
 
 

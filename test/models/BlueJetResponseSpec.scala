@@ -4,10 +4,10 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsError, JsSuccess, Json}
 
-class BlueJetSpec extends AnyWordSpec with Matchers {
+class BlueJetResponseSpec extends AnyWordSpec with Matchers {
 
 
-  val blueJet = BlueJet("BJ267", "LHR", "CDG", "03/11/2026 12:30", "+00:00", 75, 16546, "GBP", Some(7))
+  val blueJet = BlueJetResponse("BJ267", "LHR", "CDG", "03/11/2026 12:30", "+00:00", 75, 16546, "GBP", Some(7))
 
   val blueJetRespones = """[
       |  {
@@ -84,7 +84,7 @@ class BlueJetSpec extends AnyWordSpec with Matchers {
                           |]""".stripMargin
 
   def parseJsonHelper(response: String) = {
-      Json.parse(response).validate[List[BlueJet]] match {
+      Json.parse(response).validate[List[BlueJetResponse]] match {
         case JsSuccess(caseClass, _) => caseClass
         case JsError(errors) => fail(s"failed to read blueJet, Error: $errors")
       }
@@ -108,13 +108,13 @@ class BlueJetSpec extends AnyWordSpec with Matchers {
     }
 
     "throw JsError when wrong data type is present in Json response" in {
-      val brokenBlueJet = Json.parse(wrongDatatypeRespones).validate[BlueJet]
+      val brokenBlueJet = Json.parse(wrongDatatypeRespones).validate[BlueJetResponse]
 
       brokenBlueJet shouldBe a[JsError]
     }
 
     "throw JsError when missing fields are present in Json response" in {
-      val missingFieldBlueJet = Json.parse(missingFieldResponse).validate[BlueJet]
+      val missingFieldBlueJet = Json.parse(missingFieldResponse).validate[BlueJetResponse]
 
       missingFieldBlueJet shouldBe a[JsError]
     }

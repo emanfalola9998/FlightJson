@@ -12,7 +12,7 @@ object BlueJetMapper {
   private val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 
 
-  def toOffer(flight: BlueJet): Either[String, Offer] = {
+  def toOffer(flight: BlueJetResponse): Either[String, Offer] = {
 
     for {
       localDateTime  <- parseLocalDateTime(flight.depLocal,flight.code) // calls that can fail
@@ -30,7 +30,7 @@ object BlueJetMapper {
   }
 
   private def parseLocalDateTime(flightDepLocal: String, code: String): Either[String, LocalDateTime] = {
-    Try(LocalDateTime.parse(flightDepLocal, formatter)).toEither.left.map(_ => s"Error parsing to LocalDateTime for flight code: ${code},  ${flightDepLocal}")
+    Try(LocalDateTime.parse(flightDepLocal, formatter)).toEither.left.map(_ => s"Error parsing to LocalDateTime for flight code: ${code}, ${flightDepLocal}")
     // Use try block for codes that can fail
   }
 

@@ -1,13 +1,12 @@
 package models
 
-import org.scalatest.matchers.must.Matchers.matchPattern
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsError, JsPath, JsSuccess, Json}
 
-class SkyHighSpec extends AnyWordSpec with Matchers {
+class SkyHighResponseSpec extends AnyWordSpec with Matchers {
 
-  val skyHigh = SkyHigh(Data(List(Flight("SH176", RouteFlight("LHR", "CDG"), "2026-11-03T09:00:00.000Z", "2026-11-03T10:15:00.000Z", Price("319.94","GBP"), 1))))
+  val skyHighResponse = SkyHighResponse(Data(List(Flight("SH176", RouteFlight("LHR", "CDG"), "2026-11-03T09:00:00.000Z", "2026-11-03T10:15:00.000Z", Price("319.94","GBP"), 1))))
 
   val skyHighJsonResponse =  """{
                |  "data": {
@@ -73,7 +72,7 @@ class SkyHighSpec extends AnyWordSpec with Matchers {
 
 
   def parseJsonHelper(response: String) ={
-    Json.parse(response).validate[SkyHigh] match{
+    Json.parse(response).validate[SkyHighResponse] match{
       case JsSuccess(skyHigh, _) => skyHigh
       case JsError(errors) => fail(s"failed to read jsValue correctly, Error: $errors")
     }
@@ -84,11 +83,11 @@ class SkyHighSpec extends AnyWordSpec with Matchers {
     "parse the Json to a case class SkyHigh" in {
       val convertedSkyHigh = parseJsonHelper(skyHighJsonResponse)
 
-      convertedSkyHigh.data.flights.head shouldBe skyHigh.data.flights.head
+      convertedSkyHigh.data.flights.head shouldBe skyHighResponse.data.flights.head
     }
 
     "Return failure when the wrong type in Json is present" in {
-      val convertedBrokenSkyHigh = Json.parse(wrongFieldTypeResponse).validate[SkyHigh]
+      val convertedBrokenSkyHigh = Json.parse(wrongFieldTypeResponse).validate[SkyHighResponse]
 
       convertedBrokenSkyHigh should matchPattern {
         case JsError(errors) if errors.exists(_._1 == JsPath \"data"\ "flights" \ 0 \ "route" \ "origin") =>
@@ -99,7 +98,7 @@ class SkyHighSpec extends AnyWordSpec with Matchers {
     }
 
     "Return failure when a required field is missing in the JSON" in {
-      val convertedBrokenSkyHigh = Json.parse(missingFieldResponse).validate[SkyHigh]
+      val convertedBrokenSkyHigh = Json.parse(missingFieldResponse).validate[SkyHighResponse]
 
       convertedBrokenSkyHigh should matchPattern {
         case JsError(errors) if errors.exists { case (path, validationErrors) =>

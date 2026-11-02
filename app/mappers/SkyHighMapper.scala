@@ -2,7 +2,7 @@ package mappers
 
 import models.{Flight, Money, Offer}
 
-import java.time.{Instant}
+import java.time.Instant
 import scala.util.Try
 
 object SkyHighMapper {

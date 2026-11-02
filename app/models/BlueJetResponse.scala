@@ -4,7 +4,7 @@ import play.api.libs.json.JsonNaming.SnakeCase
 import play.api.libs.json.{Json, JsonConfiguration, OFormat}
 
 
-case class BlueJet(
+case class BlueJetResponse(
                   code: String,
                   from: String,
                   to: String,
@@ -17,7 +17,7 @@ case class BlueJet(
                   )
 
 
-object BlueJet {
+object BlueJetResponse {
   implicit val config: JsonConfiguration = JsonConfiguration(SnakeCase)
-  implicit val formats: OFormat[BlueJet] = Json.format[BlueJet]
+  implicit val formats: OFormat[BlueJetResponse] = Json.format[BlueJetResponse]
 }

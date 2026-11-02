@@ -8,11 +8,13 @@ import play.api.libs.json.Json
 import java.time.LocalDate
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+import services.SearchService
 
 @Singleton
 class BlueJetController @Inject()(
   cc: ControllerComponents,
-  blueJetConnector: BlueJetConnector
+  blueJetConnector: BlueJetConnector,
+  searchService: SearchService
 )(implicit ec: ExecutionContext) extends AbstractController(cc) {
   // Controllers receive requests pass it to the service/connector then receive the response and convert to Json
   // and send back to the client

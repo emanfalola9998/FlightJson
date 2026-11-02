@@ -1,5 +1,5 @@
 package models
 
-case class SearchResult(offer: Offer, warnings: String)
+case class SearchResult(offers: List[Offer], warnings: List[String])
 
 

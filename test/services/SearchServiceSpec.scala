@@ -2,20 +2,13 @@ package services
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.mockito.ArgumentMatchers.any
-import scala.concurrent.ExecutionContext
-import connectors.{BlueJetConnector, SkyHighConnector}
 import models.{Money, Offer}
 
 import java.time.Instant
 
 
 class SearchServiceSpec extends AnyWordSpec with Matchers {
-  implicit val ec: ExecutionContext = ExecutionContext.global
 
-  val origin = "LHR"
-  val destination = "LGS"
-  val date = "2025-03-03"
 
   val skyOfferHappyPath = Offer(
     airline = "SkyHigh",
@@ -40,28 +33,18 @@ class SearchServiceSpec extends AnyWordSpec with Matchers {
   val resultUnhappyPath: Either[String, List[Either[String, Offer]]] = Right(
     List(
       Left(
-        "mangled airline"
+        "Mangled Airline data"
       )
     )
   )
 
   val resultAirlineUnhappyPath: Either[String, List[Either[String, Offer]]] = Left(
-    "SkyHigh"
+    "SkyHigh is unreachable" // error obtained from the connector that is then overriden in the collect method
   )
-
-  val resultAirlineBothPaths: Either[String, List[Either[String, Offer]]] = Right(
-    List(
-      Right(
-        skyOfferHappyPath
-      )
-    )
-  )
-
-  val mangledAirline = List("mangledAirline")
 
 
   "SearchService.collect" should {
-    "collect method should take airline and the result from the connector and return successful Flights and warnings" in {
+    "take airline and the result from the connector and return successful Flights and warnings" in {
       val product = SearchService.collect("SkyHigh", resultHappyPath)
 
       val successfulFlights =
@@ -80,10 +63,10 @@ class SearchServiceSpec extends AnyWordSpec with Matchers {
       val (offers, warnings) = SearchService.collect("SkyHigh", resultUnhappyPath)
 
       offers shouldBe List.empty[Offer]
-      warnings shouldBe List("mangled airline")
+      warnings shouldBe List("Mangled Airline data")
     }
 
-    "collect method should message airline is unavailable if no flights are present" in {
+    "message airline is unavailable when the airline call fails" in {
       val product = SearchService.collect("SkyHigh", resultAirlineUnhappyPath)
 
       product shouldBe (List.empty[Offer], List("SkyHigh is unavailable"))
@@ -98,8 +81,17 @@ class SearchServiceSpec extends AnyWordSpec with Matchers {
       val (offers, warnings) = SearchService.collect("SkyHigh", input)
 
       offers shouldBe List(skyOfferHappyPath)
-      warnings shouldBe List("Failed to parse abc to BigDecimal for flight SH999")
+      warnings shouldBe List(mangledMessage)
 
+    }
+
+    "collect should return empty lists when no flights are present in input" in {
+      val input: Either[String, List[Either[String, Offer]]] = Right(List())
+
+      val (offers, warnings) = SearchService.collect("SkyHigh", input)
+
+      offers shouldBe List.empty[Offer]
+      warnings shouldBe List.empty[String]
     }
 
   }

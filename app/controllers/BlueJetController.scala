@@ -22,10 +22,14 @@ class BlueJetController @Inject()(
   def get(origin: String, destination: String, date: String): Action[AnyContent] = Action.async {
     Try(LocalDate.parse(date)).toEither match {
       case Right(_) =>
-        blueJetConnector.search(origin, destination, date).map {
-          case Right(response) => Ok(Json.toJson(response))
-          case Left(error) => BadGateway(Json.obj("error" -> error))
+        searchService.offers(origin, destination, date).map {
+          case (_, blueJetOfferResult) => Ok(Json.toJson(blueJetOfferResult))
+          case error => BadGateway(Json.obj("error" -> s"$error"))
         }
+//        blueJetConnector.search(origin, destination, date).map {
+//          case Right(response) => Ok(Json.toJson(response))
+//          case Left(error) => BadGateway(Json.obj("error" -> error))
+//        }
       case Left(_) => Future.successful(BadRequest(Json.obj("error" -> s"LocalDate unable to convert date provided $date should be in format 'yyyy-MM-dd'")))
     }
 

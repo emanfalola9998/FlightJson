@@ -20,11 +20,14 @@ class SkyHighController @Inject()(
   def get(origin: String, destination: String, date: String): Action[AnyContent] = Action.async {
        Try(LocalDate.parse(date)).toEither match {
          case Right(_) =>
-//           searchService.offerings(origin, destination, date)
-           skyHighConnector.search(origin, destination, date).map {
-             case Right(response) => Ok(Json.toJson(response)) // async call so it's a future
-             case Left(error) => BadGateway(Json.obj("error" -> error )) // async call so it's a future
+           searchService.offers(origin, destination, date).map {
+             case (skyHighOfferings, _) => Ok(Json.toJson(skyHighOfferings))
+             case error => BadGateway(Json.obj("error" -> s"$error"))
            }
+//           skyHighConnector.search(origin, destination, date).map {
+//             case Right(response) => Ok(Json.toJson(response)) // async call so it's a future
+//             case Left(error) => BadGateway(Json.obj("error" -> error )) // async call so it's a future
+//           }
          case Left(_) => Future.successful(BadRequest(Json.obj("error" -> s"Incorrect date format: $date should be in 'yyyy-MM-dd'"))) // so we must return a future here too
        }
 

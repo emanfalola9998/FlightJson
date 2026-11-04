@@ -11,9 +11,11 @@ import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
 
+import java.net.ConnectException
 import java.util.concurrent.TimeoutException
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
 
 class SkyHighConnectorSpec extends AnyWordSpec with Matchers with MockitoSugar with ScalaFutures{
 
@@ -36,18 +38,22 @@ class SkyHighConnectorSpec extends AnyWordSpec with Matchers with MockitoSugar w
   val skyHighConnector = new SkyHighConnector(ws, config)
 
   // helper method
-  def mockConnection(statusCode: Int, call: Boolean = true) = {
+  def mockConnection(statusCode: Int, call: Boolean = true, error: String = "") = {
     when(ws.url(any())).thenReturn(request)
     when(request.withQueryStringParameters(any())).thenReturn(request)
     when(request.withRequestTimeout(any[Duration])).thenReturn(request)
     if (call){
       when(request.get()).thenReturn(Future.successful(response))
+      when(response.status).thenReturn(statusCode)
+      when(response.json).thenReturn(Json.toJson(skyHighResponse))
     }
     else {
-      when(request.get()).thenReturn(Future.failed(new TimeoutException))
+      case error: String if error.contains("timeout") => when(request.get()).thenReturn(Future.failed(new TimeoutException))
+      case error: String if error.contains("connection") => when(request.get()).thenReturn(Future.failed(new ConnectException()))
+      case error: String  if error.contains("NonFatal") => when(request.get()).thenReturn(Future.failed(RuntimeException))
+      case other =>  throw new IllegalArgumentException(s"Unhandled error stub: $other")
     }
-    when(response.status).thenReturn(statusCode)
-    when(response.json).thenReturn(Json.toJson(skyHighResponse))
+
   }
 
   "skyHighConnector" should {
@@ -68,11 +74,27 @@ class SkyHighConnectorSpec extends AnyWordSpec with Matchers with MockitoSugar w
     }
 
     "return Timeout Exception when call fails to return a response in two seconds" in {
-      mockConnection(500, call = false)
+      mockConnection(500, call = false, "timeout")
 
       val result = skyHighConnector.search(origin, destination, date).futureValue
 
       result shouldBe Left("SkyHigh timeout after 2s")
+    }
+
+    "return Connection Exception when call fails to return a response in two seconds" in {
+      mockConnection(500, call = false, "connection")
+
+      val result = skyHighConnector.search(origin, destination, date).futureValue
+
+      result shouldBe Left("SkyHigh is unreachable")
+    }
+
+    "return NonFatal Exception when call fails to return a response in two seconds" in {
+      mockConnection(500, call = false, "NonFatal")
+
+      val result = skyHighConnector.search(origin, destination, date).futureValue
+
+      result shouldBe Left("SkyHigh call failed")
     }
   }
 }

@@ -3,40 +3,79 @@ package connectors
 import models.BlueJetResponse
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
+import java.util.concurrent.TimeoutException
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
+import scala.concurrent.duration._
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.mockito.MockitoSugar.mock
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Configuration
-import play.api.libs.ws.{WSClient, WSRequest}
+import play.api.libs.json.Json
+import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class BlueJetConnectorSpec extends AnyWordSpec with Matchers {
+class BlueJetConnectorSpec extends AnyWordSpec with Matchers with MockitoSugar with ScalaFutures {
 
-
+  // mocks and values needed for setup
   implicit val ec = ExecutionContext.global
   val ws = mock[WSClient]
-  val config = mock[Configuration]
+  val request = mock[WSRequest]
+  val response = mock[WSResponse]
+  val config: Configuration = Configuration.from(Map("blueJet.baseUrl" -> "localhost:4002"))
 
+  // default data
   val origin = "LHR"
   val destination = "LOS"
   val date = "2026-03-03"
 
-  val blueJetResponse =  BlueJetResponse("BJ267", "LHR", "CDG", "03/11/2026 12:30", "+00:00", 75, 16546, "GBP", Some(7))
+  // BlueJet Model class
+  val blueJetResponse =
+    BlueJetResponse("BJ267", "LHR", "CDG", "03/11/2026 12:30", "+00:00", 75, 16546, "GBP", Some(7))
 
-
+  // Connector (code being tested)
   val blueJetConnector = new BlueJetConnector(ws, config)
 
+  // helper method
+  def mockConnection(statusCode: Int, call: Boolean = true) = {
+    when(ws.url(any())).thenReturn(request)
+    when(request.withQueryStringParameters(any())).thenReturn(request)
+    when(request.withRequestTimeout(any[Duration])).thenReturn(request)
+    if (call) {
+      when(request.get()).thenReturn(Future.successful(response))
+    }
+    else {
+      when(request.get()).thenReturn(Future.failed(new TimeoutException()))
+    }
+    when(response.status).thenReturn(statusCode)
+    when(response.json).thenReturn(Json.toJson(List(blueJetResponse)))
+  }
+
   "blueJetConnector" should {
-    "return list of blueJetResponses" in {
-      when(ws.url(any()))
-        .thenReturn(Future.successful(any[WSRequest]))
+    "return list of blueJetResponses (happy path)" in {
+      mockConnection(200)
 
       val result = blueJetConnector.search(origin, destination, date).futureValue
 
-      result shouldBe List(blueJetResponse)
+      result shouldBe Right(List(blueJetResponse))
+    }
+
+    "return Left(string) when status code is not 200" in {
+      mockConnection(404)
+
+      val result = blueJetConnector.search(origin, destination, date).futureValue
+
+      result shouldBe Left(s"BlueJet returned status code: 404")
+    }
+
+    "return TimeoutException when call fails to return a response in two seconds" in {
+      mockConnection(500, call = false)
+
+      val result = blueJetConnector.search(origin, destination, date).futureValue
+
+      result shouldBe Left("BlueJet timeout after 2s")
     }
   }
+
 
 }

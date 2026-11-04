@@ -13,7 +13,6 @@ import services.SearchService
 @Singleton
 class BlueJetController @Inject()(
   cc: ControllerComponents,
-  blueJetConnector: BlueJetConnector,
   searchService: SearchService
 )(implicit ec: ExecutionContext) extends AbstractController(cc) {
   // Controllers receive requests pass it to the service/connector then receive the response and convert to Json
@@ -24,12 +23,9 @@ class BlueJetController @Inject()(
       case Right(_) =>
         searchService.offers(origin, destination, date).map {
           case (_, blueJetOfferResult) => Ok(Json.toJson(blueJetOfferResult))
-          case error => BadGateway(Json.obj("error" -> s"$error"))
+        }.recover{
+          case ex => BadGateway(Json.obj("error" -> s"Dependent service error: ${ex}"))
         }
-//        blueJetConnector.search(origin, destination, date).map {
-//          case Right(response) => Ok(Json.toJson(response))
-//          case Left(error) => BadGateway(Json.obj("error" -> error))
-//        }
       case Left(_) => Future.successful(BadRequest(Json.obj("error" -> s"LocalDate unable to convert date provided $date should be in format 'yyyy-MM-dd'")))
     }
 

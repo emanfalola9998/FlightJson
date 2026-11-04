@@ -2,7 +2,6 @@ package controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.mvc._
-import connectors.SkyHighConnector
 import play.api.libs.json.Json
 import services.SearchService
 
@@ -21,7 +20,9 @@ class SkyHighController @Inject()(
          case Right(_) =>
            searchService.offers(origin, destination, date).map {
              case (skyHighOfferings, _) => Ok(Json.toJson(skyHighOfferings))
-             case error => BadGateway(Json.obj("error" -> s"$error"))
+           }.recover{
+             case ex =>
+               BadGateway(Json.obj("error" -> s"Dependent service failed: ${ex.getMessage}"))
            }
          case Left(_) => Future.successful(BadRequest(Json.obj("error" -> s"Incorrect date format: $date should be in 'yyyy-MM-dd'"))) // so we must return a future here too
        }

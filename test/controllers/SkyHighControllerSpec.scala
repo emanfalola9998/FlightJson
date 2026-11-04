@@ -8,8 +8,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.Json
-import play.api.mvc.ControllerComponents
-import play.api.mvc.Results._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.SearchService
@@ -34,6 +32,7 @@ class SkyHighControllerSpec extends AnyWordSpec with Matchers with MockitoSugar 
   val destination = "LOS"
   val date = "2026-03-03"
 
+  // searchResult model
   val skyHighOffering = SearchResult(
     offers = List(
       Offer("SkyHigh", "XD432", "LGW", "BCN", Instant.parse("2026-11-03T16:30:00Z"), Instant.parse("2026-11-03T17:45:00Z"), Money(BigDecimal("173.79"), "GBP"), Some(6))
@@ -61,14 +60,22 @@ class SkyHighControllerSpec extends AnyWordSpec with Matchers with MockitoSugar 
       contentAsJson(resultFuture) shouldBe Json.toJson(skyHighOffering)
     }
 
-    "return an Action with status code 'BadGateway' when presented with invalid or no data" in {
+    "return an Action with status code 'BadGateway' when presented with invalid data" in {
 
       when(service.offers(any(), any(), any()))
-        .thenReturn(Future.failed(new TimeoutException()))
+        .thenReturn(Future.failed(new TimeoutException("Service timedout")))
 
       val resultFuture = skyHighController.get(origin, destination, date).apply(FakeRequest())
 
       status(resultFuture) shouldBe BAD_GATEWAY
+
+    }
+
+    "return an Action with status BadRequest when an invalid date is provided" in {
+
+      val resultFuture = skyHighController.get(origin, destination, "2026-003-03").apply(FakeRequest())
+
+      status(resultFuture) shouldBe BAD_REQUEST
     }
   }
 

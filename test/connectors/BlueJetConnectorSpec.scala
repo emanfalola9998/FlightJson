@@ -1,11 +1,14 @@
 package connectors
 
 import models.BlueJetResponse
+import org.apache.pekko.stream.ConnectionException
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
+
 import java.util.concurrent.TimeoutException
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
+
 import scala.concurrent.duration._
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
@@ -13,6 +16,8 @@ import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.libs.ws.{WSClient, WSRequest, WSResponse}
 
+import java.lang
+import java.net.ConnectException
 import scala.concurrent.{ExecutionContext, Future}
 
 class BlueJetConnectorSpec extends AnyWordSpec with Matchers with MockitoSugar with ScalaFutures {
@@ -37,18 +42,22 @@ class BlueJetConnectorSpec extends AnyWordSpec with Matchers with MockitoSugar w
   val blueJetConnector = new BlueJetConnector(ws, config)
 
   // helper method
-  def mockConnection(statusCode: Int, call: Boolean = true) = {
+  def mockConnection(statusCode: Int, call: Boolean = true, error: String = ""): Unit = {
     when(ws.url(any())).thenReturn(request)
     when(request.withQueryStringParameters(any())).thenReturn(request)
     when(request.withRequestTimeout(any[Duration])).thenReturn(request)
     if (call) {
       when(request.get()).thenReturn(Future.successful(response))
+      when(response.status).thenReturn(statusCode)
+      when(response.json).thenReturn(Json.toJson(List(blueJetResponse)))
     }
     else {
-      when(request.get()).thenReturn(Future.failed(new TimeoutException()))
+      case error: String if error.contains("timeout") => when(request.get()).thenReturn(Future.failed(new TimeoutException))
+      case error: String if error.contains("connection") => when(request.get()).thenReturn(Future.failed(new ConnectException()))
+      case error: String if error.contains("NonFatal") => when(request.get()).thenReturn(Future.failed(RuntimeException))
+      case other => throw new IllegalArgumentException(s"Unhandled error stub: $other")
     }
-    when(response.status).thenReturn(statusCode)
-    when(response.json).thenReturn(Json.toJson(List(blueJetResponse)))
+
   }
 
   "blueJetConnector" should {
@@ -69,7 +78,23 @@ class BlueJetConnectorSpec extends AnyWordSpec with Matchers with MockitoSugar w
     }
 
     "return TimeoutException when call fails to return a response in two seconds" in {
-      mockConnection(500, call = false)
+      mockConnection(500, call = false, "timeout")
+
+      val result = blueJetConnector.search(origin, destination, date).futureValue
+
+      result shouldBe Left("BlueJet timeout after 2s")
+    }
+
+    "return ConnectException when call fails to connect to API " in {
+      mockConnection(500, call = false, "connection")
+
+      val result = blueJetConnector.search(origin, destination, date).futureValue
+
+      result shouldBe Left("BlueJet timeout after 2s")
+    }
+
+    "return NonFatal for all non-fatal exceptions" in {
+      mockConnection(500, call = false, "NonFatal")
 
       val result = blueJetConnector.search(origin, destination, date).futureValue
 

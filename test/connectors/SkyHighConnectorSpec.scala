@@ -38,7 +38,7 @@ class SkyHighConnectorSpec extends AnyWordSpec with Matchers with MockitoSugar w
   val skyHighConnector = new SkyHighConnector(ws, config)
 
   // helper method
-  def mockConnection(statusCode: Int, call: Boolean = true, error: String = "") = {
+  def mockConnection(statusCode: Int, call: Boolean = true, error: String = ""): Unit = {
     when(ws.url(any())).thenReturn(request)
     when(request.withQueryStringParameters(any())).thenReturn(request)
     when(request.withRequestTimeout(any[Duration])).thenReturn(request)
